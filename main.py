@@ -14,7 +14,7 @@ from replit import db
 class MyClient(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        dblog('Starting bot!')
         self.followers_channel_id = 873251385850880111
 
         # start the task to run in the background
