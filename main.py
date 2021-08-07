@@ -65,7 +65,7 @@ class MyClient(discord.Client):
     async def before_my_task(self):
         await self.wait_until_ready()  # wait until the bot logs in
 
-    @tasks.loop(seconds=15)
+    @tasks.loop(seconds=30)
     async def update_mc_players(self):
         try:
             key = 'x:minecraft:playing_count'
