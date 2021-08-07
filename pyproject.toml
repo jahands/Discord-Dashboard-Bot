@@ -9,6 +9,8 @@ python = "^3.8"
 replit = "^3.2.4"
 discord = "^1.7.3"
 pytz = "^2021.1"
+logzero = "^1.7.0"
+mcstatus = "^6.4.0"
 
 [tool.poetry.dev-dependencies]
 
