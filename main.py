@@ -12,7 +12,6 @@ from replit import db
 from mcstatus import MinecraftServer
 from logzero import logger
 
-
 class MyClient(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -21,6 +20,7 @@ class MyClient(discord.Client):
 
         # start the task to run in the background
         self.update_followers.start()
+        self.update_mc_players.start()
 
     def get_data(self):
         headers = {
@@ -59,23 +59,24 @@ class MyClient(discord.Client):
 
         except Exception as e:
             logger.exception(e)
-            dblog(e)
+            dblog(e)    
 
     @update_followers.before_loop
     async def before_my_task(self):
         await self.wait_until_ready()  # wait until the bot logs in
-    
-    @tasks.loop(minutes=1)
+
+    @tasks.loop(seconds=15)
     async def update_mc_players(self):
         try:
             key = 'x:minecraft:playing_count'
-            server = MinecraftServer.lookup('{0}:25565'.format(os.environ['MC_SERVER']))
+            server = MinecraftServer.lookup('{0}:25565'.format(
+                os.environ['MC_SERVER']))
             status = server.status()
             online = status.players.online
             if (online != db.get(key, -1)):
                 new_name = 'minecraft-{0}'.format(online)
-                channel = self.get_channel(os.environ['MC_CHANNEL_ID'])
-                await channel.edit(name = new_name)
+                channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
+                await channel.edit(name=new_name)
                 db.set(key, online)
                 logger.info(new_name)
                 dblog(new_name)
@@ -83,12 +84,10 @@ class MyClient(discord.Client):
         except Exception as e:
             logger.exception(e)
             dblog(e)
-    
+
     @update_mc_players.before_loop
     async def before_mc_players(self):
         await self.wait_until_ready()  # wait until the bot logs in
-
-    
 
 
 client = MyClient()
