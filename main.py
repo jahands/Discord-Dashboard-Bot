@@ -67,19 +67,28 @@ class MyClient(discord.Client):
 
     @tasks.loop(seconds=15)
     async def update_mc_players(self):
+        channel_name = 'x:minecraft:channel_name'
         try:
-            key = 'x:minecraft:playing_count'
             server = MinecraftServer.lookup('{0}:25565'.format(
                 os.environ['MC_SERVER']))
             status = server.status()
             online = status.players.online
-            if (online != db.get(key, -1)):
-                new_name = 'minecraft-{0}'.format(online)
+            new_name = 'minecraft-{0}'.format(online)
+            if (new_name != db.get(channel_name)):
                 channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
                 await channel.edit(name=new_name)
-                db.set(key, online)
+                db.set(channel_name, new_name)
                 logger.info(new_name)
                 dblog(new_name)
+        
+        except ConnectionRefusedError:
+            channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
+            new_name = 'minecraft-offline'
+            if (new_name != db.get(channel_name, '')):
+                await channel.edit(name=new_name)
+                db.set(channel_name, new_name)
+                dblog(new_name)
+                logger.warn(new_name)
 
         except Exception as e:
             logger.exception(e)
