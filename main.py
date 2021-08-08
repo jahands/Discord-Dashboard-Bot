@@ -89,8 +89,9 @@ class MyClient(discord.Client):
                 user['name'] for user in status.raw['players']['sample']
             ]
             usersConnected.sort()
-            new_message = "{0} Connected Players on `{1}`:\n{2}".format(
+            new_message = "{0} Connected Player{1} on `{2}`:\n{3}".format(
                 online,
+                's' if online > 1 else '',
                 os.environ['MC_SERVER'],
                 '\n'.join([f'- {u}' for u in usersConnected]))
             user_list_key = 'x:minecraft:connected_players'
