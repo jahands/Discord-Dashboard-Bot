@@ -1,17 +1,16 @@
-import os
-import requests
+import datetime
 import json
+import os
 
 import discord
 import pytz
-import datetime
-
+import requests
 from discord.ext import tasks
-from dblog import dblog
-from replit import db
-from mcstatus import MinecraftServer
 from logzero import logger
+from mcstatus import MinecraftServer
+from replit import db
 
+from dblog import dblog
 from lib import get_server_formatted
 
 
