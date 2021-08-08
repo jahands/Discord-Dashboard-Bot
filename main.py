@@ -91,11 +91,11 @@ class MyClient(discord.Client):
             ] if 'sample' in status.raw['players'] else []
             usersConnected.sort()
             new_message = "{0} Connected Player{1} on `{2}`{3}\n{4}".format(
-                online,
-                '' if online == 1 else 's',
-                os.environ['MC_SERVER'],
-                ':' if len(usersConnected) > 0 else '',
-                '\n'.join([f'- {u}' for u in usersConnected]))
+                online,  # Count of users online
+                '' if online == 1 else 's',  # Formatting
+                os.environ['MC_SERVER'],  # IP to server
+                ':' if len(usersConnected) > 0 else '',  # Formatting
+                '\n'.join([f'- {u}' for u in usersConnected]))  # Userlist
             # example of new_message:
             # 1 Connected Player on mc.example.com:
             # - Dinnerbone
