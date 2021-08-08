@@ -78,7 +78,8 @@ class MyClient(discord.Client):
             channel = None
             if (new_name != db.get(channel_name)):
                 if channel is None:
-                    channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
+                    channel = self.get_channel(int(
+                        os.environ['MC_CHANNEL_ID']))
                 await channel.edit(name=new_name)
                 db.set(channel_name, new_name)
                 logger.info(new_name)
@@ -87,24 +88,29 @@ class MyClient(discord.Client):
             # Update chat message with player list
             usersConnected = [
                 user['name'] for user in status.raw['players']['sample']
-            ]
+            ] if 'sample' in status.raw['players'] else []
             usersConnected.sort()
-            new_message = "{0} Connected Player{1} on `{2}`:\n{3}".format(
+            new_message = "{0} Connected Player{1} on `{2}`{3}\n{4}".format(
                 online,
-                's' if online > 1 else '',
+                '' if online == 1 else 's',
                 os.environ['MC_SERVER'],
+                ':' if len(usersConnected) > 0 else '',
                 '\n'.join([f'- {u}' for u in usersConnected]))
+
             user_list_key = 'x:minecraft:connected_players'
             if (new_message != db.get(user_list_key, '')):
                 logger.info(new_message)
                 if channel is None:
-                    channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
+                    channel = self.get_channel(int(
+                        os.environ['MC_CHANNEL_ID']))
                 message = await channel.fetch_message(873728975862661232)
                 await message.edit(content=new_message)
                 # Status channel
                 channel = self.get_channel(873735300566880267)
                 message = await channel.fetch_message(873735828503937044)
-                await message.edit(content='**GAMES:**\n- **All the Mods 6:**\n{0}'.format(new_message))
+                await message.edit(
+                    content='**GAMES:**\n- **All the Mods 6:**\n{0}'.format(
+                        new_message))
                 db.set(user_list_key, new_message)
 
         except ConnectionRefusedError:
@@ -118,7 +124,9 @@ class MyClient(discord.Client):
 
         except Exception as e:
             if (e.__str__() == "Server did not respond with any information!"):
-                logger.warn("Server did not respond with any information, better luck next time!")
+                logger.warn(
+                    "Server did not respond with any information, better luck next time!"
+                )
                 dblog(e)
             else:
                 logger.exception(e)
