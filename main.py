@@ -12,6 +12,7 @@ from replit import db
 from mcstatus import MinecraftServer
 from logzero import logger
 
+
 class MyClient(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -59,7 +60,7 @@ class MyClient(discord.Client):
 
         except Exception as e:
             logger.exception(e)
-            dblog(e)    
+            dblog(e)
 
     @update_followers.before_loop
     async def before_my_task(self):
@@ -80,7 +81,23 @@ class MyClient(discord.Client):
                 db.set(channel_name, new_name)
                 logger.info(new_name)
                 dblog(new_name)
-        
+
+            # Update chat message with player list
+            usersConnected = [
+                user['name'] for user in status.raw['players']['sample']
+            ]
+            usersConnected.sort()
+            new_message = "Connected Players on `{0}`:\n{1}".format(
+                os.environ['MC_SERVER'],
+                '\n'.join([f'- {u}' for u in usersConnected]))
+            user_list_key = 'x:minecraft:connected_players'
+            if (new_message != db.get(user_list_key, '')):
+                logger.info(new_message)
+                channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
+                message = await channel.fetch_message(873728975862661232)
+                await message.edit(content=new_message)
+                db.set(user_list_key, new_message)
+
         except ConnectionRefusedError:
             channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
             new_name = 'minecraft-offline'
