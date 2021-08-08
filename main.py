@@ -75,8 +75,10 @@ class MyClient(discord.Client):
             status = server.status()
             online = status.players.online
             new_name = 'minecraft-{0}'.format(online)
+            channel = None
             if (new_name != db.get(channel_name)):
-                channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
+                if channel is None:
+                    channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
                 await channel.edit(name=new_name)
                 db.set(channel_name, new_name)
                 logger.info(new_name)
@@ -87,15 +89,21 @@ class MyClient(discord.Client):
                 user['name'] for user in status.raw['players']['sample']
             ]
             usersConnected.sort()
-            new_message = "Connected Players on `{0}`:\n{1}".format(
+            new_message = "{0} Connected Players on `{1}`:\n{2}".format(
+                online,
                 os.environ['MC_SERVER'],
                 '\n'.join([f'- {u}' for u in usersConnected]))
             user_list_key = 'x:minecraft:connected_players'
             if (new_message != db.get(user_list_key, '')):
                 logger.info(new_message)
-                channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
+                if channel is None:
+                    channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
                 message = await channel.fetch_message(873728975862661232)
                 await message.edit(content=new_message)
+                # Status channel
+                channel = self.get_channel(873735300566880267)
+                message = await channel.fetch_message(873735828503937044)
+                await message.edit(content='**GAMES:**\n- **All the Mods 6:**\n{0}'.format(new_message))
                 db.set(user_list_key, new_message)
 
         except ConnectionRefusedError:
