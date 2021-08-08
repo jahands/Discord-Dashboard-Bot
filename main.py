@@ -5,7 +5,6 @@ import json
 import discord
 import pytz
 import datetime
-import time
 
 from discord.ext import tasks
 from dblog import dblog
