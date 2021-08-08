@@ -26,6 +26,13 @@ class MyClient(discord.Client):
         self.update_followers.start()
         self.update_mc_players.start()
 
+    def can_edit_channel(self, channel_name: str):
+        # datetime.datetime.now().timestamp()
+        key = f'x:can_edit_channel:{channel_name}'
+        last_edit = datetime.datetime.fromtimestamp(db.get(key, 0))
+        now = datetime.datetime.now()
+        return now - last_edit > (60 * 5)  # 5 minutes
+
     def get_data(self):
         headers = {
             'user-agent':
@@ -54,12 +61,13 @@ class MyClient(discord.Client):
             dblog(new_name)
             if (followers_count != db.get('x:followers_count', -1)):
                 # Only update data if count is changed
-                await channel.edit(name=new_name)
-                # Log to logging channel
-                log_channel = self.get_channel(873253483430686810)
-                now = datetime.datetime.now(pytz.timezone('US/Central'))
-                await log_channel.send(f'{new_name} @ {now}')
-                db.set('x:followers_count', followers_count)
+                if (self.can_edit_channel('replit_followers')):
+                    await channel.edit(name=new_name)
+                    # Log to logging channel
+                    log_channel = self.get_channel(873253483430686810)
+                    now = datetime.datetime.now(pytz.timezone('US/Central'))
+                    await log_channel.send(f'{new_name} @ {now}')
+                    db.set('x:followers_count', followers_count)
 
         except Exception as e:
             logger.exception(e)
@@ -71,7 +79,7 @@ class MyClient(discord.Client):
 
     @tasks.loop(seconds=15)
     async def update_mc_players(self):
-        channel_name = 'x:minecraft:channel_name'
+        logger.info('update')
         try:
             server = MinecraftServer.lookup('{0}:25565'.format(
                 os.environ['MC_SERVER']))
@@ -124,6 +132,7 @@ class MyClient(discord.Client):
             if (new_channel_name != channel.name):
                 logger.info('Updating #status channel name')
                 await channel.edit(name=new_channel_name)
+            logger.info('done')
 
         except Exception as e:
             if (e.__str__() == "Server did not respond with any information!"):
