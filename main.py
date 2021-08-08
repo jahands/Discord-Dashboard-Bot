@@ -123,11 +123,11 @@ class MyClient(discord.Client):
                 await channel.edit(name=new_name)
                 db.set(channel_name, new_name)
                 dblog(new_name)
-                logger.warn(new_name)
+                logger.warning(new_name)
 
         except Exception as e:
             if (e.__str__() == "Server did not respond with any information!"):
-                logger.warn(
+                logger.warning(
                     "Server did not respond with any information, better luck next time!"
                 )
                 dblog(e)
