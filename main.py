@@ -78,13 +78,10 @@ class MyClient(discord.Client):
             status = server.status()
             online = status.players.online
             new_name = 'minecraft-{0}'.format(online)
-            channel = None
-            if (new_name != db.get(channel_name)):
-                if channel is None:
-                    channel = self.get_channel(int(
-                        os.environ['MC_CHANNEL_ID']))
+            channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
+            if (new_name != channel.name):
+                logger.info('updating #minecraft channel name')
                 await channel.edit(name=new_name)
-                db.set(channel_name, new_name)
                 logger.info(new_name)
                 dblog(new_name)
 
@@ -102,9 +99,6 @@ class MyClient(discord.Client):
             server_1_fmt = server_1['fmt']
             if (server_1_fmt != db.get(user_list_key, '')):
                 logger.info(server_1_fmt)
-                if channel is None:
-                    channel = self.get_channel(int(
-                        os.environ['MC_CHANNEL_ID']))
                 message = await channel.fetch_message(
                     minecraft_channel_message_id)
                 await message.edit(content=server_1_fmt)
@@ -116,21 +110,20 @@ class MyClient(discord.Client):
             servers = [server_1, server_2]
             new_message = '\n\n'.join([s['fmt'] for s in servers])
             status_key = 'x:minecraft:status_channel_message'
+            channel = self.get_channel(status_channel_id)
+            # Update message with players
             if (new_message != db.get(status_key, '')):
-                logger.info('status changed!')
-                channel = self.get_channel(status_channel_id)
                 message = await channel.fetch_message(status_channel_message_id
                                                       )
                 await message.edit(content=f'**GAMES:**\n{new_message}')
                 db.set(status_key, new_message)
-                # count players and update status channel with count
-                total_players = sum([
-                    s['player_count'] for s in servers
-                ])
-                new_channel_name = f'status-{total_players}'
-                if (new_channel_name != channel.name):
-                    print('editing status channel', new_channel_name)
-                    await channel.edit(name=new_channel_name)
+
+            # count players and update status channel with count
+            total_players = sum([s['player_count'] for s in servers])
+            new_channel_name = f'status-{total_players}'
+            if (new_channel_name != channel.name):
+                logger.info('Updating #status channel name')
+                await channel.edit(name=new_channel_name)
 
         except Exception as e:
             if (e.__str__() == "Server did not respond with any information!"):
