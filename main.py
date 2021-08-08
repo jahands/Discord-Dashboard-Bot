@@ -94,10 +94,8 @@ class MyClient(discord.Client):
                     channel = self.get_channel(int(
                         os.environ['MC_CHANNEL_ID']))
                 if (self.can_edit_channel('minecraft')):
-                    logger.info('updating #minecraft channel name')
                     await channel.edit(name=new_name)
                     db.set(mc_channel_name_key, new_name)
-                    logger.info(new_name)
                     dblog(new_name)
 
             # Update chat message with player list
@@ -146,7 +144,6 @@ class MyClient(discord.Client):
                 if (channel is None):
                     channel = self.get_channel(status_channel_id)
                 if (self.can_edit_channel('status')):
-                    logger.info('Updating #status channel name')
                     await channel.edit(name=new_channel_name)
                     db.set(status_channel_name_key, new_channel_name)
 

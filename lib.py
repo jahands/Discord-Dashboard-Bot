@@ -1,6 +1,6 @@
 from typing import Optional
-from logzero import logger
 
+from logzero import logger
 from mcstatus import MinecraftServer
 
 
