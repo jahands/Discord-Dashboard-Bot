@@ -96,6 +96,9 @@ class MyClient(discord.Client):
                 os.environ['MC_SERVER'],
                 ':' if len(usersConnected) > 0 else '',
                 '\n'.join([f'- {u}' for u in usersConnected]))
+            # example of new_message:
+            # 1 Connected Player on mc.example.com:
+            # - Dinnerbone
 
             user_list_key = 'x:minecraft:connected_players'
             if (new_message != db.get(user_list_key, '')):
