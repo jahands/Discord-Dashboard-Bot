@@ -95,7 +95,7 @@ class MyClient(discord.Client):
             # - Dinnerbone
 
             user_list_key = 'x:minecraft:connected_players'
-            status_channel_id = 873735300566880267
+            status_channel_id = 873735300566880267 #status
             status_channel_message_id = 873971100793569280
             minecraft_channel_message_id = 873728975862661232
             if (server_1 != db.get(user_list_key, '')):
