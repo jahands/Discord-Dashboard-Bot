@@ -12,6 +12,8 @@ from replit import db
 from mcstatus import MinecraftServer
 from logzero import logger
 
+from lib import get_server_formatted
+
 
 class MyClient(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -86,16 +88,8 @@ class MyClient(discord.Client):
                 dblog(new_name)
 
             # Update chat message with player list
-            usersConnected = [
-                user['name'] for user in status.raw['players']['sample']
-            ] if 'sample' in status.raw['players'] else []
-            usersConnected.sort()
-            new_message = "{0} Connected Player{1} on `{2}`{3}\n{4}".format(
-                online,  # Count of users online
-                '' if online == 1 else 's',  # Formatting
-                os.environ['MC_SERVER'],  # IP to server
-                ':' if len(usersConnected) > 0 else '',  # Formatting
-                '\n'.join([f'- {u}' for u in usersConnected]))  # Userlist
+            server_1 = get_server_formatted(os.environ['MC_SERVER'],
+                                            'All the Mods 6')
             # example of new_message:
             # 1 Connected Player on mc.example.com:
             # - Dinnerbone
@@ -104,20 +98,28 @@ class MyClient(discord.Client):
             status_channel_id = 873735300566880267
             status_channel_message_id = 873971100793569280
             minecraft_channel_message_id = 873728975862661232
-            if (new_message != db.get(user_list_key, '')):
-                logger.info(new_message)
+            if (server_1 != db.get(user_list_key, '')):
+                logger.info(server_1)
                 if channel is None:
                     channel = self.get_channel(int(
                         os.environ['MC_CHANNEL_ID']))
-                message = await channel.fetch_message(minecraft_channel_message_id)
-                await message.edit(content=new_message)
-                # Status channel
+                message = await channel.fetch_message(
+                    minecraft_channel_message_id)
+                await message.edit(content=server_1)
+                db.set(user_list_key, server_1)
+
+            # Status channel
+            server_2 = get_server_formatted(os.environ['MC_SERVER_2'],
+                                            'The Royal Galaxy')
+            new_message = '\n\n'.join([server_1, server_2])
+            status_key = 'x:minecraft:status_channel_message'
+            if (new_message != db.get(status_key, '')):
+                logger.info('status changed!')
                 channel = self.get_channel(status_channel_id)
-                message = await channel.fetch_message(status_channel_message_id)
-                await message.edit(
-                    content='**GAMES:**\n- **All the Mods 6:**\n{0}'.format(
-                        new_message))
-                db.set(user_list_key, new_message)
+                message = await channel.fetch_message(status_channel_message_id
+                                                      )
+                await message.edit(content=f'**GAMES:**\n{new_message}')
+                db.set(status_key, new_message)
 
         except ConnectionRefusedError:
             channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
