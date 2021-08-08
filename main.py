@@ -95,7 +95,7 @@ class MyClient(discord.Client):
             # - Dinnerbone
 
             user_list_key = 'x:minecraft:connected_players'
-            status_channel_id = 873735300566880267 #status
+            status_channel_id = 873735300566880267  #status
             status_channel_message_id = 873971100793569280
             minecraft_channel_message_id = 873728975862661232
             if (server_1 != db.get(user_list_key, '')):
@@ -113,6 +113,7 @@ class MyClient(discord.Client):
                                             'The Royal Galaxy')
             new_message = '\n\n'.join([server_1, server_2])
             status_key = 'x:minecraft:status_channel_message'
+            status_channel_name_key = 'x:minecraft:status_channel_name'
             if (new_message != db.get(status_key, '')):
                 logger.info('status changed!')
                 channel = self.get_channel(status_channel_id)
@@ -120,7 +121,15 @@ class MyClient(discord.Client):
                                                       )
                 await message.edit(content=f'**GAMES:**\n{new_message}')
                 db.set(status_key, new_message)
-
+                # count players and update status channel with count
+                total_players = sum([
+                    int(m.split(' ')[0]) for m in new_message.split('\n')
+                    if 'Connected Player' in m
+                ])
+                new_channel_name = f'status-{total_players}'
+                if (new_channel_name != db.get(status_channel_name_key, '')):
+                    await channel.edit(name=new_channel_name)
+                    db.set(status_channel_name_key, new_channel_name)
         except ConnectionRefusedError:
             channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
             new_name = 'minecraft-offline'
