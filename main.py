@@ -5,6 +5,7 @@ import json
 import discord
 import pytz
 import datetime
+import time
 
 from discord.ext import tasks
 from dblog import dblog
@@ -98,22 +99,23 @@ class MyClient(discord.Client):
             status_channel_id = 873735300566880267  #status
             status_channel_message_id = 873971100793569280
             minecraft_channel_message_id = 873728975862661232
-            if (server_1 != db.get(user_list_key, '')):
-                logger.info(server_1)
+            server_1_fmt = server_1['fmt']
+            if (server_1_fmt != db.get(user_list_key, '')):
+                logger.info(server_1_fmt)
                 if channel is None:
                     channel = self.get_channel(int(
                         os.environ['MC_CHANNEL_ID']))
                 message = await channel.fetch_message(
                     minecraft_channel_message_id)
-                await message.edit(content=server_1)
-                db.set(user_list_key, server_1)
+                await message.edit(content=server_1_fmt)
+                db.set(user_list_key, server_1_fmt)
 
             # Status channel
             server_2 = get_server_formatted(os.environ['MC_SERVER_2'],
                                             'The Royal Galaxy')
-            new_message = '\n\n'.join([server_1, server_2])
+            servers = [server_1, server_2]
+            new_message = '\n\n'.join([s['fmt'] for s in servers])
             status_key = 'x:minecraft:status_channel_message'
-            status_channel_name_key = 'x:minecraft:status_channel_name'
             if (new_message != db.get(status_key, '')):
                 logger.info('status changed!')
                 channel = self.get_channel(status_channel_id)
@@ -123,21 +125,12 @@ class MyClient(discord.Client):
                 db.set(status_key, new_message)
                 # count players and update status channel with count
                 total_players = sum([
-                    int(m.split(' ')[0]) for m in new_message.split('\n')
-                    if 'Connected Player' in m
+                    s['player_count'] for s in servers
                 ])
                 new_channel_name = f'status-{total_players}'
-                if (new_channel_name != db.get(status_channel_name_key, '')):
+                if (new_channel_name != channel.name):
+                    print('editing status channel', new_channel_name)
                     await channel.edit(name=new_channel_name)
-                    db.set(status_channel_name_key, new_channel_name)
-        except ConnectionRefusedError:
-            channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
-            new_name = 'minecraft-offline'
-            if (new_name != db.get(channel_name, '')):
-                await channel.edit(name=new_name)
-                db.set(channel_name, new_name)
-                dblog(new_name)
-                logger.warning(new_name)
 
         except Exception as e:
             if (e.__str__() == "Server did not respond with any information!"):
