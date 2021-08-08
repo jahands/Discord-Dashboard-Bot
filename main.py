@@ -31,7 +31,11 @@ class MyClient(discord.Client):
         key = f'x:can_edit_channel:{channel_name}'
         last_edit = datetime.datetime.fromtimestamp(db.get(key, 0))
         now = datetime.datetime.now()
-        return now - last_edit > (60 * 5)  # 5 minutes
+        can_edit = (now - last_edit).total_seconds() > (60 * 5 + 1)
+        if (can_edit):
+            logger.info(f'We can edit {channel_name}')
+            db.set(key, now.timestamp())
+        return can_edit
 
     def get_data(self):
         headers = {
@@ -52,14 +56,14 @@ class MyClient(discord.Client):
     @tasks.loop(minutes=30)
     async def update_followers(self):
         try:
-            channel = self.get_channel(self.followers_channel_id)
             data = self.get_data()
             followers_count = data['followers_count']
-            new_name = 'Replit Followers: {0}'.format(
-                '{:,}'.format(followers_count))
-            print(new_name)
-            dblog(new_name)
             if (followers_count != db.get('x:followers_count', -1)):
+                new_name = 'Replit Followers: {0}'.format(
+                    '{:,}'.format(followers_count))
+                print(new_name)
+                dblog(new_name)
+                channel = self.get_channel(self.followers_channel_id)
                 # Only update data if count is changed
                 if (self.can_edit_channel('replit_followers')):
                     await channel.edit(name=new_name)
@@ -79,19 +83,24 @@ class MyClient(discord.Client):
 
     @tasks.loop(seconds=15)
     async def update_mc_players(self):
-        logger.info('update')
         try:
             server = MinecraftServer.lookup('{0}:25565'.format(
                 os.environ['MC_SERVER']))
             status = server.status()
             online = status.players.online
             new_name = 'minecraft-{0}'.format(online)
-            channel = self.get_channel(int(os.environ['MC_CHANNEL_ID']))
-            if (new_name != channel.name):
-                logger.info('updating #minecraft channel name')
-                await channel.edit(name=new_name)
-                logger.info(new_name)
-                dblog(new_name)
+            channel = None
+            mc_channel_name_key = 'x:minecraft:channel_name'
+            if (new_name != db.get(mc_channel_name_key, '')):
+                if (channel is None):
+                    channel = self.get_channel(int(
+                        os.environ['MC_CHANNEL_ID']))
+                if (self.can_edit_channel('minecraft')):
+                    logger.info('updating #minecraft channel name')
+                    await channel.edit(name=new_name)
+                    db.set(mc_channel_name_key, new_name)
+                    logger.info(new_name)
+                    dblog(new_name)
 
             # Update chat message with player list
             server_1 = get_server_formatted(os.environ['MC_SERVER'],
@@ -101,12 +110,17 @@ class MyClient(discord.Client):
             # - Dinnerbone
 
             user_list_key = 'x:minecraft:connected_players'
+            status_channel_name_key = 'x:minecraft:status_channel_name'
+            status_key = 'x:minecraft:status_channel_message'
             status_channel_id = 873735300566880267  #status
             status_channel_message_id = 873971100793569280
             minecraft_channel_message_id = 873728975862661232
             server_1_fmt = server_1['fmt']
+            # Update #minecraft message
             if (server_1_fmt != db.get(user_list_key, '')):
-                logger.info(server_1_fmt)
+                if (channel is None):
+                    channel = self.get_channel(int(
+                        os.environ['MC_CHANNEL_ID']))
                 message = await channel.fetch_message(
                     minecraft_channel_message_id)
                 await message.edit(content=server_1_fmt)
@@ -117,10 +131,11 @@ class MyClient(discord.Client):
                                             'The Royal Galaxy')
             servers = [server_1, server_2]
             new_message = '\n\n'.join([s['fmt'] for s in servers])
-            status_key = 'x:minecraft:status_channel_message'
-            channel = self.get_channel(status_channel_id)
+            channel = None
             # Update message with players
             if (new_message != db.get(status_key, '')):
+                if (channel is None):
+                    channel = self.get_channel(status_channel_id)
                 message = await channel.fetch_message(status_channel_message_id
                                                       )
                 await message.edit(content=f'**GAMES:**\n{new_message}')
@@ -129,10 +144,13 @@ class MyClient(discord.Client):
             # count players and update status channel with count
             total_players = sum([s['player_count'] for s in servers])
             new_channel_name = f'status-{total_players}'
-            if (new_channel_name != channel.name):
-                logger.info('Updating #status channel name')
-                await channel.edit(name=new_channel_name)
-            logger.info('done')
+            if (new_channel_name != db.get(status_channel_name_key, '')):
+                if (channel is None):
+                    channel = self.get_channel(status_channel_id)
+                if (self.can_edit_channel('status')):
+                    logger.info('Updating #status channel name')
+                    await channel.edit(name=new_channel_name)
+                    db.set(status_channel_name_key, new_channel_name)
 
         except Exception as e:
             if (e.__str__() == "Server did not respond with any information!"):
