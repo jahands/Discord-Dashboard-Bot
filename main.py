@@ -116,8 +116,12 @@ class MyClient(discord.Client):
                 logger.warn(new_name)
 
         except Exception as e:
-            logger.exception(e)
-            dblog(e)
+            if (e.__str__() == "Server did not respond with any information!"):
+                logger.warn("Server did not respond with any information, better luck next time!")
+                dblog(e)
+            else:
+                logger.exception(e)
+                dblog(e)
 
     @update_mc_players.before_loop
     async def before_mc_players(self):
