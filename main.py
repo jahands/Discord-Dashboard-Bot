@@ -101,16 +101,19 @@ class MyClient(discord.Client):
             # - Dinnerbone
 
             user_list_key = 'x:minecraft:connected_players'
+            status_channel_id = 873735300566880267
+            status_channel_message_id = 873971100793569280
+            minecraft_channel_message_id = 873728975862661232
             if (new_message != db.get(user_list_key, '')):
                 logger.info(new_message)
                 if channel is None:
                     channel = self.get_channel(int(
                         os.environ['MC_CHANNEL_ID']))
-                message = await channel.fetch_message(873728975862661232)
+                message = await channel.fetch_message(minecraft_channel_message_id)
                 await message.edit(content=new_message)
                 # Status channel
-                channel = self.get_channel(873735300566880267)
-                message = await channel.fetch_message(873735828503937044)
+                channel = self.get_channel(status_channel_id)
+                message = await channel.fetch_message(status_channel_message_id)
                 await message.edit(
                     content='**GAMES:**\n- **All the Mods 6:**\n{0}'.format(
                         new_message))
