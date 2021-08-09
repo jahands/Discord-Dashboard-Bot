@@ -130,7 +130,7 @@ class MyClient(discord.Client):
             royal_message_id = 874079189911879700
             royal_message_key = 'x:minecraft:royal:status_message'
             channel = None
-            new_message = server_2['fmt']
+            new_message = server_2['fmt'][2:]
             if (new_message != db.get(royal_message_key, '')):
                 if (channel is None):
                     channel = self.get_channel(royal_channel_id)
