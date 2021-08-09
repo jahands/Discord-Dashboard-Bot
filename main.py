@@ -11,7 +11,7 @@ from mcstatus import MinecraftServer
 from replit import db
 
 from dblog import dblog
-from lib import get_server_formatted
+from lib import get_server_formatted, get_royal_server_formatted
 
 
 class MyClient(discord.Client):
@@ -123,8 +123,22 @@ class MyClient(discord.Client):
                 db.set(user_list_key, server_1_fmt)
 
             # Status channel
-            server_2 = get_server_formatted(os.environ['MC_SERVER_2'],
-                                            'The Royal Galaxy')
+            server_2 = get_royal_server_formatted(os.environ['MC_SERVER_2'],
+                                                  'The Royal Galaxy')
+            # Royal galaxy
+            royal_channel_id = 874077971391086612
+            royal_message_id = 874079189911879700
+            royal_message_key = 'x:minecraft:royal:status_message'
+            channel = None
+            new_message = server_2['fmt']
+            if (new_message != db.get(royal_message_key, '')):
+                if (channel is None):
+                    channel = self.get_channel(royal_channel_id)
+                message = await channel.fetch_message(royal_message_id)
+                await message.edit(content=f'{new_message}')
+                db.set(royal_message_key, new_message)
+
+            # my server
             servers = [server_1, server_2]
             new_message = '\n\n'.join([s['fmt'] for s in servers])
             channel = None
