@@ -6,6 +6,7 @@ from mcstatus import MinecraftServer
 
 def get_server_formatted(ip: str, title: Optional[str]):
     try:
+        online = 0 # So in case this lookup fails
         server = MinecraftServer.lookup('{0}:25565'.format(ip))
         status = server.status()
         online = status.players.online
@@ -24,11 +25,13 @@ def get_server_formatted(ip: str, title: Optional[str]):
         logger.exception(e)
         new_message = '{0} Connection Error'.format(
             f'- **{title}:**\n' if title is not None else '')
+
     to_return = {'fmt': new_message, 'player_count': online}
     return to_return
 
 def get_royal_server_formatted(ip: str, title: Optional[str]):
     try:
+        online = 0 # So in case this lookup fails
         server = MinecraftServer.lookup('{0}:25565'.format(ip))
         status = server.status()
         online = status.players.online
@@ -48,5 +51,6 @@ def get_royal_server_formatted(ip: str, title: Optional[str]):
         logger.exception(e)
         new_message = '{0} Connection Error'.format(
             f'- **{title}:**\n' if title is not None else '')
+
     to_return = {'fmt': new_message, 'player_count': online}
     return to_return
