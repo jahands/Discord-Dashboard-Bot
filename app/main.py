@@ -8,16 +8,18 @@ import requests
 from discord.ext import tasks
 from logzero import logger
 from mcstatus import MinecraftServer
-from replit import db
+import redis
 
-from dblog import dblog
 from lib import get_server_formatted, get_royal_server_formatted
+
+r = redis.Redis(host=os.environ['REDISHOST'], port=os.environ['REDISPORT'],
+                username=os.environ['REDISUSER'], password=os.environ['REDISPASSWORD'], db=0, decode_responses=True)
 
 
 class MyClient(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        dblog('Starting bot!')
+        # dblog('Starting bot!')
         self.followers_channel_id = 873251385850880111
 
         # start the task to run in the background
@@ -27,12 +29,12 @@ class MyClient(discord.Client):
     def can_edit_channel(self, channel_name: str):
         # datetime.datetime.now().timestamp()
         key = f'x:can_edit_channel:{channel_name}'
-        last_edit = datetime.datetime.fromtimestamp(db.get(key, 0))
+        last_edit = datetime.datetime.fromtimestamp(r.get(key) or 0)
         now = datetime.datetime.now()
         can_edit = (now - last_edit).total_seconds() > (60 * 5 + 1)
         if (can_edit):
             logger.info(f'We can edit {channel_name}')
-            db.set(key, now.timestamp())
+            r.set(key, now.timestamp())
         return can_edit
 
     def get_data(self):
@@ -56,11 +58,11 @@ class MyClient(discord.Client):
         try:
             data = self.get_data()
             followers_count = data['followers_count']
-            if (followers_count != db.get('x:followers_count', -1)):
+            if (followers_count != (r.get('x:followers_count') or -1)):
                 new_name = 'Replit Followers: {0}'.format(
                     '{:,}'.format(followers_count))
                 print(new_name)
-                dblog(new_name)
+                # dblog(new_name)
                 channel = self.get_channel(self.followers_channel_id)
                 # Only update data if count is changed
                 if (self.can_edit_channel('replit_followers')):
@@ -69,11 +71,11 @@ class MyClient(discord.Client):
                     log_channel = self.get_channel(873253483430686810)
                     now = datetime.datetime.now(pytz.timezone('US/Central'))
                     await log_channel.send(f'{new_name} @ {now}')
-                    db.set('x:followers_count', followers_count)
+                    r.set('x:followers_count', followers_count)
 
         except Exception as e:
             logger.exception(e)
-            dblog(e)
+            # dblog(e)
 
     @update_followers.before_loop
     async def before_my_task(self):
@@ -89,14 +91,14 @@ class MyClient(discord.Client):
             new_name = 'minecraft-{0}'.format(online)
             channel = None
             mc_channel_name_key = 'x:minecraft:channel_name'
-            if (new_name != db.get(mc_channel_name_key, '')):
+            if (new_name != r.get(mc_channel_name_key)):
                 if (channel is None):
                     channel = self.get_channel(int(
                         os.environ['MC_CHANNEL_ID']))
                 if (self.can_edit_channel('minecraft')):
                     await channel.edit(name=new_name)
-                    db.set(mc_channel_name_key, new_name)
-                    dblog(new_name)
+                    r.set(mc_channel_name_key, new_name)
+                    # dblog(new_name)
 
             # Update chat message with player list
             server_1 = get_server_formatted(os.environ['MC_SERVER'],
@@ -108,19 +110,19 @@ class MyClient(discord.Client):
             user_list_key = 'x:minecraft:connected_players'
             status_channel_name_key = 'x:minecraft:status_channel_name'
             status_key = 'x:minecraft:status_channel_message'
-            status_channel_id = 873735300566880267  #status
+            status_channel_id = 873735300566880267  # status
             status_channel_message_id = 873971100793569280
             minecraft_channel_message_id = 873728975862661232
             server_1_fmt = server_1['fmt']
             # Update #minecraft message
-            if (server_1_fmt != db.get(user_list_key, '')):
+            if (server_1_fmt != r.get(user_list_key)):
                 if (channel is None):
                     channel = self.get_channel(int(
                         os.environ['MC_CHANNEL_ID']))
                 message = await channel.fetch_message(
                     minecraft_channel_message_id)
                 await message.edit(content=server_1_fmt)
-                db.set(user_list_key, server_1_fmt)
+                r.set(user_list_key, server_1_fmt)
 
             # Status channel
             server_2 = get_royal_server_formatted(os.environ['MC_SERVER_2'],
@@ -131,45 +133,45 @@ class MyClient(discord.Client):
             royal_message_key = 'x:minecraft:royal:status_message'
             channel = None
             new_message = server_2['fmt'][2:]
-            if (new_message != db.get(royal_message_key, '')):
+            if (new_message != r.get(royal_message_key)):
                 if (channel is None):
                     channel = self.get_channel(royal_channel_id)
                 message = await channel.fetch_message(royal_message_id)
                 await message.edit(content=f'{new_message}')
-                db.set(royal_message_key, new_message)
+                r.set(royal_message_key, new_message)
 
             # my server
             servers = [server_1, server_2]
             new_message = '\n\n'.join([s['fmt'] for s in servers])
             channel = None
             # Update message with players
-            if (new_message != db.get(status_key, '')):
+            if (new_message != r.get(status_key)):
                 if (channel is None):
                     channel = self.get_channel(status_channel_id)
                 message = await channel.fetch_message(status_channel_message_id
                                                       )
                 await message.edit(content=f'**GAMES:**\n{new_message}')
-                db.set(status_key, new_message)
+                r.set(status_key, new_message)
 
             # count players and update status channel with count
             total_players = sum([s['player_count'] for s in servers])
             new_channel_name = f'status-{total_players}'
-            if (new_channel_name != db.get(status_channel_name_key, '')):
+            if (new_channel_name != r.get(status_channel_name_key)):
                 if (channel is None):
                     channel = self.get_channel(status_channel_id)
                 if (self.can_edit_channel('status')):
                     await channel.edit(name=new_channel_name)
-                    db.set(status_channel_name_key, new_channel_name)
+                    r.set(status_channel_name_key, new_channel_name)
 
         except Exception as e:
             if (e.__str__() == "Server did not respond with any information!"):
                 logger.warning(
                     "Server did not respond with any information, better luck next time!"
                 )
-                dblog(e)
+                # dblog(e)
             else:
                 logger.exception(e)
-                dblog(e)
+                # dblog(e)
 
     @update_mc_players.before_loop
     async def before_mc_players(self):
