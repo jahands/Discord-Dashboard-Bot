@@ -9,6 +9,7 @@ from discord.ext import tasks
 from logzero import logger
 from mcstatus import MinecraftServer
 import redis
+import time
 
 from lib import get_server_formatted, get_royal_server_formatted
 
@@ -180,4 +181,14 @@ class MyClient(discord.Client):
 
 client = MyClient()
 
-client.run(os.environ['BOT_TOKEN'])
+# Client could fail to run, do exponential backoff
+backoff = 10
+while True:
+    try:
+        client.run(os.environ['BOT_TOKEN'])
+    except Exception as e:
+        # log.exception(e, {'level': 'Warn', 'app': app_name})
+        if(backoff >= 600):
+            backoff = 10
+        time.sleep(backoff)
+        backoff = backoff * backoff
