@@ -30,7 +30,7 @@ class MyClient(discord.Client):
     def can_edit_channel(self, channel_name: str):
         # datetime.datetime.now().timestamp()
         key = f'x:can_edit_channel:{channel_name}'
-        last_edit = datetime.datetime.fromtimestamp(r.get(key) or 0)
+        last_edit = datetime.datetime.fromtimestamp(int(r.get(key) or 0))
         now = datetime.datetime.now()
         can_edit = (now - last_edit).total_seconds() > (60 * 5 + 1)
         if (can_edit):
@@ -59,7 +59,7 @@ class MyClient(discord.Client):
         try:
             data = self.get_data()
             followers_count = data['followers_count']
-            if (followers_count != (r.get('x:followers_count') or -1)):
+            if (followers_count != (int(r.get('x:followers_count') or -1))):
                 new_name = 'Replit Followers: {0}'.format(
                     '{:,}'.format(followers_count))
                 print(new_name)
