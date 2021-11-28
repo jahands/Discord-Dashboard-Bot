@@ -30,7 +30,7 @@ class MyClient(discord.Client):
     def can_edit_channel(self, channel_name: str):
         # datetime.datetime.now().timestamp()
         key = f'x:can_edit_channel:{channel_name}'
-        last_edit = datetime.datetime.fromtimestamp(int(r.get(key) or 0))
+        last_edit = datetime.datetime.fromtimestamp(float(r.get(key) or 0))
         now = datetime.datetime.now()
         can_edit = (now - last_edit).total_seconds() > (60 * 5 + 1)
         if (can_edit):
