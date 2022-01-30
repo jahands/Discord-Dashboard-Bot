@@ -44,10 +44,10 @@ class MyClient(discord.Client):
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.67'
         }
         url = 'https://mlmcounts.herokuapp.com/twitter/api/?name=replit'
-        response = requests.get(url, headers=headers)
-        if (not response.ok):
-            raise Exception('Could not get account details')
-        data = json.loads(response.text)
+        with requests.get(url, headers=headers) as response:
+            if (not response.ok):
+                raise Exception('Could not get account details')
+            data = json.loads(response.text)
         return data
 
     async def on_ready(self):
