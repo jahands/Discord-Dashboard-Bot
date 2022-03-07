@@ -103,7 +103,7 @@ class MyClient(discord.Client):
 
             # Update chat message with player list
             server_1 = get_server_formatted(os.environ['MC_SERVER'],
-                                            'FTB Endeavour')
+                                            os.environ['MC_SERVER_NAME'])
             # example of new_message:
             # 1 Connected Player on mc.example.com:
             # - Dinnerbone
